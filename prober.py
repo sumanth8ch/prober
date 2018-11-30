@@ -24,13 +24,14 @@ while (count < samples):
     except easysnmp.exceptions.EasySNMPTimeoutError:
         continue
     t1 = time.time()
-    if len(data) == len(data1):
+    if (count !=0):
         if sysup[0] < sysup1[0]:
             print("SYSTEM REBOOTED")
             data = []
             data1 = []
             sysup = []
             sysup1 = []
+            output = []
         else :
             continue
     t2 = t1-t0
@@ -45,15 +46,21 @@ while (count < samples):
             if rate<0:
                 if cnttype == 'COUNTER':
                     rate = ((p+2**32)-q)/t2
-                    # print output
+                    output.append(rate)
                 elif cnttype == 'COUNTER64':
                     rate = ((p+2**64)-q)/t2
-                    # print output
+                    output.append(rate)
             else :
-                #print output
+                output.append(rate)
         count += 1
+    if(len(output==0)):
+        print (t1, "|")
+    else:
+        for i in output:
+            print (t1, "|", ("|".join(i)))
     data1 = data[:]
     sysup1 = sysup[:]
+    del output[:]
     t3 = time.time()
     if(interval > (t3-t2)):
         t4 = interval - (t3-t2)
