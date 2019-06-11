@@ -1,4 +1,4 @@
-#! /usr/bin/python
+#!/usr/bin/python
 import easysnmp, sys, time
 from easysnmp import Session
 agentdetails = sys.argv[1].split(':')
@@ -10,60 +10,60 @@ interval = 1/sampfreq
 samples = int(sys.argv[3])
 oidlist = sys.argv[4:len(sys.argv)]
 count = 0
-sysup = []
 sysup1 = []
-data = []
+sysup2 = []
 data1 = []
-output = []
-while (count < samples):
-    t0 = time.time()
+data2 = []
+output=[]
+tempt = 0
+x=[]
+
+while (count <= samples):
+    t1 = time.time()
     try :
         session = Session(hostname = ip, remote_port = port, community = comm, version = 2, timeout = 3, retries = 1)
-        data = session.get(oidlist)
-        sysup = session.get('1.3.6.1.2.1.1.3.0')
+        data1 = session.get(oidlist)
+        sysup1 = session.get('1.3.6.1.2.1.1.3.0')
     except easysnmp.exceptions.EasySNMPTimeoutError:
-        continue
-    t1 = time.time()
-    if (count !=0):
-        if sysup[0] < sysup1[0]:
-            print("SYSTEM REBOOTED")
-            data = []
-            data1 = []
-            sysup = []
-            sysup1 = []
-            output = []
-        else :
-            continue
-    t2 = t1-t0
-    if(count==0):
-        count += 1
-    else:
+        pass
+    t2 = time.time()
+    
+    if len(data1) == len(data2):
+        if sampfreq > 1 :
+            t = sysup1 - sysup2
+        if sampfreq <= 1 :
+            temp =  t1 - tempt
+            if temp != 0 :
+                t = temp
+            else:
+                t = interval
+
         for i in range(len(oidlist)):
-            p = int(data[i].value)
-            q = int(data1[i].value)
-            cnttype = str(data[i].snmp_type)
-            rate = (p-q)/t2
-            if rate<0:
-                if cnttype == 'COUNTER':
-                    rate = ((p+2**32)-q)/t2
-                    output.append(rate)
-                elif cnttype == 'COUNTER64':
-                    rate = ((p+2**64)-q)/t2
-                    output.append(rate)
-            else :
-                output.append(rate)
-        count += 1
-    if(len(output==0)):
-        print (t1, "|")
+		    p = int(data1[i].value)
+		    q = int(data2[i].value)
+		    cnttype = str(data1[i].snmp_type)
+		    if p>=q:
+		        rate = (p-q)/t
+		        output.append(rate)
+		    if p<q and cnttype == 'COUNTER64':
+		        rate = ((2**64+p)-q)/t
+		        output.append(rate)
+		    if p<q and cnttype == 'COUNTER32':
+		        rate =  ((2**32+p)-q)/t
+		        output.append(rate)
+    count = count + 1
+    if(len(output)==0):
+        pass
     else:
-        for i in output:
-            print (t1, "|", ("|".join(i)))
-    data1 = data[:]
-    sysup1 = sysup[:]
+        x = [str(i) for i in output]
+        print t1, "|", ("|".join(x))
+    data2 = data1[:]
+    sysup2 = sysup1
     del output[:]
+    tempt = t1
     t3 = time.time()
-    if(interval > (t3-t2)):
-        t4 = interval - (t3-t2)
+    if(interval > (t3-t1)):
+        t4 = interval - (t3-t1)
         time.sleep(t4)
     else:
-        continue
+        time.sleep(0.0)
